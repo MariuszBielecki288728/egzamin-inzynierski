@@ -1,4 +1,4 @@
-# Gramatyki
+# Programowanie
 operatory na językach https://www.cs.toronto.edu/~amir/teaching/csc236f15/materials/lec09.pdf
 ## Luty 2021, wariant B
 
@@ -62,7 +62,60 @@ def try_easy(string):
 
         string = string[2:]
 ```
+### Zadanie 2
+Napisz w Haskellu funkcje moda, która dla listy liczb znajduję tę, która występuje najwięcej razy.
+```haskell=
+import Data.Maybe
+import Data.List
 
+find_most_ocurrent :: Eq a => [a] -> Int -> Int -> a -> a -> a
+find_most_ocurrent [] best_acc acc best_item current_item
+    | acc > best_acc = current_item
+    | acc <= best_acc = best_item
+
+find_most_ocurrent (x : xs) best_acc acc best_item current_item
+    | x == current_item = find_most_ocurrent xs best_acc (acc + 1) best_item current_item
+    | x /= current_item && acc > best_acc = find_most_ocurrent xs acc 1 current_item x
+    | x /= current_item && acc <= best_acc = find_most_ocurrent xs best_acc 1 best_item x
+
+
+moda :: Ord a => [a] -> Maybe a
+moda [] = Nothing
+moda l@(h:t) = Just (find_most_ocurrent (sort l) 0 0 h h)
+```
+### Zadanie 3
+Napisz w prologu predykat my_is, który działa tak, jakby był zdefiniowany w następujący sposób:
+```prolog
+my_is(V, E) :- V is E
+```
+Nie można korzystać z is i innych predykatów arytmetycznych, ale można z poniższych:
+```prolog
+add(X, Y, Z) :- number(X), number(X), Z is X + Y.
+mult(X, Y, Z) :- number(X), number(X), Z is X * Y.
+div(X, Y, Z) :- number(X), number(X), Z is X / Y.
+minus(X, Y, Z) :- number(X), number(X), Z is X - Y.
+```
+
+```prolog
+% https://www.cs.auckland.ac.nz/courses/compsci220s1t/archive/compsci220ft/lectures/GGlectures/220ch4_gramm.pdf
+% 4.5 An Unambiguous Grammar for Expressions
+
+%https://www3.cs.stonybrook.edu/~warren/xsbbook/node24.html
+% DCG with an evaluator
+
+:- table expr/3, term/3.
+
+expr(Val) --> expr(Eval), [+], term(Tval), {add(Eval, Tval, Val)}.
+expr(Val) --> expr(Eval), [-], term(Tval), {minus(Eval, Tval, Val)}.
+expr(Val) --> term(Val).
+term(Val) --> term(Tval), [*], factor(Fval), {mult(Tval, Fval, Val)}.
+term(Val) --> term(Tval), [/], factor(Fval), {div(Tval, Fval, Val)}.
+term(Val) --> factor(Val).
+factor(Val) --> ['('], expr(Val), [')'].
+factor(Int) --> [S], {atom(S), atom_number(S, Int)}.
+
+my_is(V, E) :- with_output_to(chars(Echars), write(E)), expr(V, Echars, []).
+```
 ## Czerwiec 2020, wariant B
 
 ### Zadanie 1
@@ -92,3 +145,62 @@ $G_2$ -- muszą mieć długość podzielną przez 3. A więc po przecięciu tych
 $S \to X \mid ccScc$  
 $X \to aaaaaaX \mid bbbbbbX \mid \epsilon$
 
+e)
+```python=
+def check(string: str) -> bool:
+    cc_occurences = 0
+    while len(string) > 1 and string[:2] == "cc":
+        cc_occurences += 1
+        string = string[2:]
+    if not string:
+        # jeśli są same c, to musi być parzysta liczba dwójek
+        return cc_occurences % 2 == 0
+
+    while string:
+        if string[:6] == 6 * "a":
+            while string[:6] == 6 * "a":
+                string = string[6:]
+        elif string[:6] == 6 * "b":
+            while string[:6] == 6 * "b":
+                string = string[6:]
+        else:
+            break
+    while len(string) > 1 and string[:2] == "cc":
+        cc_occurences -= 1
+        string = string[2:]
+    return cc_occurences == 0 and len(string) == 0
+
+```
+
+### Zadanie 2
+Napisz w prologu predykat no_repetition(L), który (dla stałej listy L) kończy się sukcesem wtedy i tylko wtedy, gdy żaden element na liście L się nie powtarza. Predykat powinien być napisany bez użycia rekurencji, można jednak użyć predykatów append, member i negacji.
+
+```prologhttps://hackmd.io/bwoRs40WTm-VQ3rFH6FERA#Zadanie-21
+no_repetition(L) :- 
+    \+ (append(_, [X | More], L), member(X, More)).
+```
+
+# Luty 2020
+
+Zadanie 3
+Napisz program obliczający wartość wyrażenia, złożonego z nawiasów, stałych 0, 1, oraz operatorów + i *. + to logiczny $or$, a * to logiczny $and$. W prologu trzeba napisać predykat evaluate(+Expression, -Value).
+
+```prolog
+:- table expr/3, term/3.
+
+expr(1) --> expr(1), [+], term(0).
+expr(1) --> expr(1), [+], term(1).
+expr(1) --> expr(0), [+], term(1).
+expr(0) --> expr(0), [+], term(0).
+expr(Val) --> term(Val).
+term(Val) --> term(LVal), [*], factor(RVal), {Val is LVal * RVal}.
+term(Val) --> factor(Val).
+factor(Val) --> ['('], expr(Val), [')'].
+factor(0) --> ['0'].
+factor(1) --> ['1'].
+
+evaluate(Expression, Value) :- with_output_to(chars(Echars), write(Expression)), expr(Value, Echars, []).
+
+%  ?- evaluate(1+1+1*0, Value).
+%  Value = 1.
+```
