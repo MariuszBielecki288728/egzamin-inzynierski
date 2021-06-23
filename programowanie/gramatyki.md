@@ -95,7 +95,7 @@ mult(X, Y, Z) :- number(X), number(X), Z is X * Y.
 div(X, Y, Z) :- number(X), number(X), Z is X / Y.
 minus(X, Y, Z) :- number(X), number(X), Z is X - Y.
 ```
-
+Sposób z CDG, kłopot jest taki, że najpierw trzeba stokenizować wyrażenie do listy atomów.
 ```prolog
 % https://www.cs.auckland.ac.nz/courses/compsci220s1t/archive/compsci220ft/lectures/GGlectures/220ch4_gramm.pdf
 % 4.5 An Unambiguous Grammar for Expressions
@@ -115,6 +115,14 @@ factor(Val) --> ['('], expr(Val), [')'].
 factor(Int) --> [S], {atom(S), atom_number(S, Int)}.
 
 my_is(V, E) :- with_output_to(chars(Echars), write(E)), expr(V, Echars, []).
+```
+O wiele fajniejsza opcja to wykorzystanie unifikacji termów już zaimplementowanych w prologu, czyli standardowych operatorów. Prolog ma już poprawnie zdefiniowaną gramatykę dla tych operatorów, więc nie musimy się martwić o priorytet i łączność.
+```prolog
+my_is2(E, E) :- atomic(E).
+my_is2(V, LE + RE) :- my_is2(LV, LE), my_is2(RV, RE), add(LV, RV, V).
+my_is2(V, LE - RE) :- my_is2(LV, LE), my_is2(RV, RE), minus(LV, RV, V).
+my_is2(V, LE * RE) :- my_is2(LV, LE), my_is2(RV, RE), mult(LV, RV, V).
+my_is2(V, LE / RE) :- my_is2(LV, LE), my_is2(RV, RE), div(LV, RV, V).
 ```
 ## Czerwiec 2020, wariant B
 
@@ -184,6 +192,8 @@ no_repetition(L) :-
 
 Zadanie 3
 Napisz program obliczający wartość wyrażenia, złożonego z nawiasów, stałych 0, 1, oraz operatorów + i *. + to logiczny $or$, a * to logiczny $and$. W prologu trzeba napisać predykat evaluate(+Expression, -Value).
+
+Poniżej implementacja używająca CDG, ale polecam użyć sposobu z zadania o my_is i pozwolić prologowi zająć się odpowiednimi priorytetami i łącznościami.
 
 ```prolog
 :- table expr/3, term/3.
